@@ -65,7 +65,7 @@ held() {
     }
 }
 
-#HotIf WinActive("ahk_exe SystemReShock-Win64-Shipping.exe")
+HotIfWinActive "ahk_exe SystemReShock-Win64-Shipping.exe"
 
 if MouseButtonFix {
     Hotkey "*~LButton", _ => Send("{Blind}{" fireKey " Down}")
