@@ -1,6 +1,8 @@
-﻿#Requires AutoHotkey v2.0
-; SS2023 Control QOL Fixes v1
-;////////////////////////////////////////////////////////////////////////////////////////
+#Requires AutoHotkey v2.0
+;/////////////////////////////////////////////////////////////////////////////////////////////////////
+; SS2023 Control QOL Fixes v1.1
+;/////////////////////////////////////////////////////////////////////////////////////////////////////
+;
 ; Available options:
 ; Remap fire/interact from keyboard to mouse in the case of dropped mouse inputs
 ; Bind both Aiming & enemy targeting to the Right-click:
@@ -9,18 +11,19 @@
 ; Quick menu actions for Vaporize & Use (default F1 & F3 respectively) 
 ; Map mouse side buttons
 ; Toggle sprint support
-;////////////////////////////////////////////////////////////////////////////////////////
+; Swap mouse wheel scroll direction (will reverse scrolling for map zoom/text boxes)
+;
+;/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ;////////////////////////////////////////////
 ;/////////// Change these values ////////////
 ;////////////////////////////////////////////
 
-
 RightMouseTargets   := true     ; fires targeting hotkey if right-click isn't held for longer than the aim-delay
 targetKey           := "LAlt"   ; match to in-game setting
 
 RightMouseAims      := true     ; aims if right-click is held longer than the aim delay
-RightMouseAimDelay  := 100      ; length of time to hold right-click before aim is triggered (in ms)
+RightMouseAimDelay  := 150      ; length of time to hold right-click before aim is triggered (in ms)
 aimKey              := "RAlt"   ; match to in-game setting
 
 ToggleSprint        := true     ; if true, sprinting will continue until all movement keys & shift are released
@@ -34,16 +37,18 @@ MouseButtonFix      := true     ; set to true if mouse clicks are being dropped,
 fireKey             := "RCtrl"  ; set to left-click
 interactKey         := "PgDn"   ; set to right-click
 
-; Quick menu actions, hover over the item and hit the corresponding hotkey (only tested at 1080p), disable by removing hotkey text
-QuickUseKey         := "F1"     ; quick use
-QuickVaporizeKey    := "F3"     ; quick vaporize
-VaporizeYOffset     := 40       ; in pixels, relative to mouse, adjust this if the script isn't hitting the correct menu option (higher for down, lower for up)
+SwapScrollDirection := false     ; swaps mouse wheel scroll direction
 
 ; enter an in-game hotkey between the quotes to bind to mouse buttons
 ; to disable, remove character from between quotes, i.e. Mouse3 := ""
 Mouse3              := "l"      ; light
 Mouse4              := "b"      ; boots
 Mouse5              := "p"      ; shield
+
+; Quick menu actions, hover over the item and hit the corresponding hotkey (only tested at 1080p), disable by removing hotkey text
+QuickUseKey         := "F1"     ; quick use
+QuickVaporizeKey    := "F3"     ; quick vaporize
+VaporizeYOffset     := 40       ; in pixels, relative to mouse, adjust this if the script isn't hitting the correct menu option (higher for down, lower for up)
 
 F10::Reload                     ; restarts script (in the event you change settings)
 
@@ -71,10 +76,12 @@ if MouseButtonFix {
     Hotkey "*~LButton", _ => Send("{Blind}{" fireKey " Down}")
     Hotkey "*~LButton up", _ => Send("{Blind}{" fireKey " Up}")
 }
+
 Hotkey "*~RButton", _ => (
     SetTimer(held, -1)
     MouseButtonFix && Send("{Blind}{" interactKey " Down}")
 )
+
 Hotkey "*~RButton up", _ => Send("{Blind}{" aimKey " Up}{" interactKey " Up}")
 
 if Mouse3
@@ -83,6 +90,11 @@ if Mouse4
     Hotkey "*XButton1", _ => Send(Mouse4)
 if Mouse5
     Hotkey "*XButton2", _ => Send(Mouse5)
+
+if SwapScrollDirection {
+    Hotkey "WheelDown", _ => Click("WheelUp")
+    Hotkey "WheelUp", _ => Click("WheelDown")
+}
 
 GotoMenu(type := "use") {
     y2 := type = "use" 
@@ -103,6 +115,7 @@ GotoMenu(type := "use") {
 
 if QuickUseKey
     Hotkey "*~" QuickUseKey, _ => GotoMenu("use")
+
 if QuickVaporizeKey
     Hotkey "*~" QuickVaporizeKey, _ => GotoMenu("vaporize")
 
