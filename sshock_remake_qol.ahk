@@ -1,56 +1,49 @@
-#Requires AutoHotkey v2.0
-;/////////////////////////////////////////////////////////////////////////////////////////////////////
-; SS2023 Control QOL Fixes v1.1
-;/////////////////////////////////////////////////////////////////////////////////////////////////////
-;
+; SS2023 Control QOL Fixes v1.2
+;////////////////////////////////////////////////////////////////////////////////////////
 ; Available options:
 ; Remap fire/interact from keyboard to mouse in the case of dropped mouse inputs
-; Bind both Aiming & enemy targeting to the Right-click:
-;   will work with in-game right-click binding, or with the MouseButtonFix option enabled
-;   can be enabled or disabled separately
+; Allow double-click, and hold actions for the Right-mouse button, with customizable delay
 ; Quick menu actions for Vaporize & Use (default F1 & F3 respectively) 
 ; Map mouse side buttons
 ; Toggle sprint support
-; Swap mouse wheel scroll direction (will reverse scrolling for map zoom/text boxes)
-;
-;/////////////////////////////////////////////////////////////////////////////////////////////////////
+; Swap mouse wheel scroll direction
+;////////////////////////////////////////////////////////////////////////////////////////
+
+#Requires AutoHotkey v2.0
 
 ;////////////////////////////////////////////
 ;/////////// Change these values ////////////
 ;////////////////////////////////////////////
 
-RightMouseTargets   := true     ; fires targeting hotkey if right-click isn't held for longer than the aim-delay
-targetKey           := "LAlt"   ; match to in-game setting
+RightMouseDoubleClick   := true     ; fires the hotkey defined below if right-click isn't held for longer than the aim-delay
+DoubleClickDelay        := 200      ; second click must be within this many milliseconds
+doubleKey               := "LAlt"   ; Key to send when RMouse is double-clicked. Default is bound to the target function in-game
 
-RightMouseAims      := true     ; aims if right-click is held longer than the aim delay
-RightMouseAimDelay  := 150      ; length of time to hold right-click before aim is triggered (in ms)
-aimKey              := "RAlt"   ; match to in-game setting
+RightMouseHold          := true     ; aims if right-click is held longer than the aim delay
+RightMouseHoldDelay     := 150      ; length of time to hold right-click before hotkey is triggered (in ms)
+holdKey                 := "RAlt"   ; Key to send when RMouse is held. I bound "aim" to LAlt in game, so holding right-click will aim after the delay
 
-ToggleSprint        := true     ; if true, sprinting will continue until all movement keys & shift are released
-forward             := "w"      ; set these keys to match in-game
-left                := "a"
-back                := "s"
-right               := "d"
-sprintKey           := "LShift"
+ToggleSprint            := true     ; if true, sprinting will continue until all movement keys & shift are released
+forward                 := "w"      ; set these keys to match in-game
+left                    := "a"
+back                    := "s"
+right                   := "d"
+sprintKey               := "LShift"
 
-MouseButtonFix      := true     ; set to true if mouse clicks are being dropped, ensure fire & interact are set in-game to the below values
-fireKey             := "RCtrl"  ; set to left-click
-interactKey         := "PgDn"   ; set to right-click
-
-SwapScrollDirection := false     ; swaps mouse wheel scroll direction
+SwapScrollDirection     := false     ; swaps mouse wheel scroll direction, also affects text boxes and map zoom
 
 ; enter an in-game hotkey between the quotes to bind to mouse buttons
 ; to disable, remove character from between quotes, i.e. Mouse3 := ""
-Mouse3              := "l"      ; light
-Mouse4              := "b"      ; boots
-Mouse5              := "p"      ; shield
+Mouse3                  := "l"      ; light
+Mouse4                  := "b"      ; boots
+Mouse5                  := "p"      ; shield
 
 ; Quick menu actions, hover over the item and hit the corresponding hotkey (only tested at 1080p), disable by removing hotkey text
-QuickUseKey         := "F1"     ; quick use
-QuickVaporizeKey    := "F3"     ; quick vaporize
-VaporizeYOffset     := 40       ; in pixels, relative to mouse, adjust this if the script isn't hitting the correct menu option (higher for down, lower for up)
+QuickUseKey             := "F1"     ; quick use
+QuickVaporizeKey        := "F3"     ; quick vaporize
+VaporizeYOffset         := 45       ; in pixels, relative to mouse, adjust this if the script isn't hitting the correct menu option (higher for down, lower for up)
 
-F10::Reload                     ; restarts script (in the event you change settings)
+F10::Reload                         ; restarts script (in the event you change settings)
 
 ;////////////////////////////////////////////
 ;/////// Do not change below values /////////
@@ -59,30 +52,41 @@ F10::Reload                     ; restarts script (in the event you change setti
 SetKeyDelay -1
 SetMouseDelay -1
 
-held() {
-    sleep RightMouseAimDelay
-    if GetKeyState("RButton") {
-        if RightMouseAims
-            Send "{Blind}{" aimKey " Down}"
-    } else {
-        if RightMouseTargets
-            Send "{Blind}{" targetKey " Down}{" targetKey " Up}" 
+RightMouseHoldDelay /= 1000
+
+clickStart() {
+    if RightMouseDoubleClick
+        doubleStart(DoubleClickDelay)
+    if RightMouseHold && !KeyWait("RButton", "U T" RightMouseHoldDelay) {
+        Send "{Blind}{" holdKey " Down}"
+    }
+}
+
+double := 0
+doubleStart(delay := 200) {
+    global double
+    delay *= -1
+    double := !double ? 1 : 2
+    SetTimer(doubleClick, delay)
+}
+
+doubleClick() {
+    global double
+    if double = 2 {
+        Send "{Blind}{" doubleKey " Down}{" doubleKey " Up}"
+        double := 0
+    } else if double = 1 {
+        double := 0
     }
 }
 
 HotIfWinActive "ahk_exe SystemReShock-Win64-Shipping.exe"
 
-if MouseButtonFix {
-    Hotkey "*~LButton", _ => Send("{Blind}{" fireKey " Down}")
-    Hotkey "*~LButton up", _ => Send("{Blind}{" fireKey " Up}")
-}
+if RightMouseDoubleClick || RightMouseHold
+    Hotkey "*~RButton", _ => SetTimer(clickStart, -1)
 
-Hotkey "*~RButton", _ => (
-    SetTimer(held, -1)
-    MouseButtonFix && Send("{Blind}{" interactKey " Down}")
-)
-
-Hotkey "*~RButton up", _ => Send("{Blind}{" aimKey " Up}{" interactKey " Up}")
+if RightMouseDoubleClick
+    Hotkey "*~RButton up", _ => Send("{Blind}{" holdKey " Up}")
 
 if Mouse3
     Hotkey "*MButton", _ => Send(Mouse3)
